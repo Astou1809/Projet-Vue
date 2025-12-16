@@ -1,6 +1,7 @@
 <template>
   <div :class="theme" id="app">
-    <!-- Boutons affichage -->
+
+    <!-- Toolbar -->
     <div class="toolbar">
       <button @click="view = 'list'">Liste</button>
       <button @click="view = 'grid'">Grille</button>
@@ -10,13 +11,22 @@
 
     <h1>Catalogue de produits</h1>
 
+    <!-- Filtrage -->
+    <select v-model="filterCategory">
+      <option value="">Toutes catégories</option>
+      <option v-for="cat in categories" :key="cat" :value="cat">
+        {{ cat }}
+      </option>
+    </select>
+
     <!-- Produits -->
     <div :class="view">
       <ProductCard
-        v-for="p in products"
+        v-for="p in filteredProducts"
         :key="p.id"
         :product="p"
-        @select="openModal(p)"
+        @select="openModal"
+        @delete="deleteProduct"
       />
     </div>
 
@@ -25,12 +35,17 @@
       <div class="modal-content">
         <h2>{{ selectedProduct.name }}</h2>
         <p>{{ selectedProduct.description }}</p>
+        <p><strong>{{ selectedProduct.price }} €</strong></p>
         <button @click="selectedProduct = null">Fermer</button>
       </div>
     </div>
 
     <!-- Formulaire -->
-    <ProductForm />
+    <ProductForm
+      :categories="categories"
+      @add-product="addProduct"
+    />
+
   </div>
 </template>
 
@@ -46,17 +61,37 @@ export default {
       view: 'cards',
       theme: 'light',
       selectedProduct: null,
-      products: [
-        {
-          id: 1,
-          name: 'Test du produit',
-          price: 99,
-          promo: true,
-          stock: 10,
-          image: 'https://via.placeholder.com/300',
-          description: 'Ceci est un produit de démonstration'
-        }
-      ]
+      filterCategory: '',
+      categories: [],
+      products: []
+    }
+  },
+
+  mounted() {
+    fetch('https://dummyjson.com/products?limit=6')
+      .then(res => res.json())
+      .then(data => {
+        this.products = data.products.map(p => ({
+          id: p.id,
+          name: p.title,
+          price: p.price,
+          category: p.category,
+          description: p.description,
+          image: p.thumbnail,
+          promo: p.discountPercentage > 10,
+          stock: p.stock
+        }))
+
+        this.categories = [...new Set(this.products.map(p => p.category))]
+      })
+  },
+
+  computed: {
+    filteredProducts() {
+      if (!this.filterCategory) return this.products
+      return this.products.filter(
+        p => p.category === this.filterCategory
+      )
     }
   },
 
@@ -66,13 +101,28 @@ export default {
     },
     toggleTheme() {
       this.theme = this.theme === 'light' ? 'dark' : 'light'
+    },
+    addProduct(product) {
+      product.id = Date.now()
+      this.products.push(product)
+    },
+    deleteProduct(id) {
+      this.products = this.products.filter(p => p.id !== id)
     }
   }
 }
+
 </script>
 
 <style>
-/* Thèmes */
+:root {
+  --primary: #4f46e5;
+}
+
+button {
+  background: var(--primary);
+}
+
 .light {
   background: #f5f5f5;
   color: #000;
@@ -83,12 +133,10 @@ export default {
   color: #fff;
 }
 
-/* Toolbar */
 .toolbar button {
   margin-right: 5px;
 }
 
-/* Affichages */
 .list {
   display: block;
 }
@@ -100,17 +148,13 @@ export default {
   gap: 20px;
 }
 
-/* Modal */
 .modal {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
+  inset: 0;
   background: rgba(0,0,0,0.6);
   display: flex;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 .modal-content {
