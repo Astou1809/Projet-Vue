@@ -10,7 +10,11 @@
 
     <select v-model="form.category" required>
       <option value="">Catégorie</option>
-      <option v-for="cat in categories" :key="cat" :value="cat">
+      <option
+        v-for="cat in categories"
+        :key="cat"
+        :value="cat"
+      >
         {{ cat }}
       </option>
     </select>
@@ -67,19 +71,26 @@ export default {
 
 <style scoped>
 .form {
-  background: white;
+  background: var(--card-light);
+  color: var(--text-light);
   padding: 20px;
-  border-radius: 10px;
-  max-width: 300px;
-  margin: 20px auto;
+  border-radius: 16px;
+  max-width: 320px;
+  margin: 30px auto;
+}
+
+.dark .form {
+  background: var(--card-dark);
+  color: var(--text-dark);
 }
 
 input,
 select,
 textarea {
   width: 100%;
-  margin-bottom: 10px;
+  margin-bottom: 12px;
   padding: 8px;
+  border-radius: 8px;
 }
 
 button {
